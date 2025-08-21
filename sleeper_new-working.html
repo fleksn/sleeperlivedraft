@@ -436,6 +436,8 @@
       const text = await file.text();
       state.rankings = parseCSV(text);
       computeAvailable();
+      // auto-start if draft ID is present
+      if(els.draftId.value.trim()){ start(); }
     }
 
     function loadRankingsFromPaste(){
@@ -443,6 +445,8 @@
       if(!text){ logErr('Paste area is empty.'); return; }
       state.rankings = parseCSV(text);
       computeAvailable();
+      // auto-start if draft ID is present
+      if(els.draftId.value.trim()){ start(); }
     }
 
     async function fetchDraftPicks(draftId){
