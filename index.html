@@ -1,0 +1,409 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Sleeper Draft – Best Available (Live)</title>
+  <style>
+    :root{--bg:#0b1020;--card:#111733;--ink:#e7ecff;--muted:#aab3d6;--accent:#6ea8fe;--good:#2ecc71;--bad:#ff6b6b;--card-border:rgba(255,255,255,.08);} 
+    html,body{height:100%}
+    body{margin:0;background:linear-gradient(180deg,var(--bg),#070a16);color:var(--ink);font:14px/1.45 Inter, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial}
+    .wrap{max-width:1200px;margin:0 auto;padding:14px}
+    header{display:flex;gap:8px;align-items:center;flex-wrap:wrap;background:rgba(255,255,255,.03);border-bottom:1px solid var(--card-border);padding:10px;border-radius:12px}
+    header input, header button, header textarea, header select{background:transparent;color:var(--ink);border:1px solid var(--card-border);border-radius:10px;padding:8px 10px}
+    header textarea{min-width:260px;height:38px}
+    .btn{cursor:pointer;font-weight:600}
+    .btn.primary{background:linear-gradient(180deg,var(--accent),#3f8efc);color:#fff;border:0}
+    .grid{display:grid;grid-template-columns:1.3fr .7fr;gap:12px;margin-top:12px}
+    @media (max-width:1000px){.grid{grid-template-columns:1fr}}
+    .card{background:rgba(255,255,255,.03);border:1px solid var(--card-border);border-radius:12px;box-shadow:0 8px 24px rgba(2,6,23,.45)}
+    .pad{padding:12px}
+    h2{margin:0 0 8px 0;font-size:16px}
+    .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+    .muted{color:var(--muted)}
+    .pill{display:inline-block;padding:2px 8px;border-radius:999px;border:1px solid var(--card-border);background:rgba(255,255,255,.03)}
+    .scroll{max-height:66vh;overflow:auto}
+    table{width:100%;border-collapse:separate;border-spacing:0}
+    thead th{position:sticky;top:0;background:rgba(7,10,22,.8);backdrop-filter:blur(4px);border-bottom:1px solid var(--card-border);text-align:left;padding:10px}
+    td,th{padding:10px;border-bottom:1px solid rgba(255,255,255,.05)}
+    tbody tr:hover{background:rgba(255,255,255,.03)}
+    .right{text-align:right}
+    .avatar{width:28px;height:28px;border-radius:999px;border:1px solid var(--card-border);display:inline-grid;place-items:center;background:rgba(255,255,255,.04);font-weight:700}
+    .toggle{display:inline-block;width:46px;height:24px;position:relative}
+    .toggle input{opacity:0;width:0;height:0;position:absolute}
+    .slider{position:absolute;inset:0;border-radius:999px;background:rgba(255,255,255,.09)}
+    .slider:after{content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;transition:transform .15s}
+    .toggle input:checked + .slider{background:linear-gradient(90deg,var(--good),#27ae60)}
+    .toggle input:checked + .slider:after{transform:translateX(22px)}
+    .recent{list-style:none;margin:6px 0 0 0;padding:0;max-height:240px;overflow:auto}
+    .recent li{display:flex;justify-content:space-between;gap:8px;padding:6px 8px;border-bottom:1px solid rgba(255,255,255,.05)}
+    .recent .undoBtn{background:transparent;border:1px solid var(--card-border);padding:2px 6px;border-radius:6px;font-size:12px;color:var(--muted);cursor:pointer;margin-left:6px}
+    .recent .undoBtn:hover{background:rgba(255,255,255,.05)}
+    .tierRow td{border-top:2px solid rgba(255,255,255,.06);font-weight:700;color:#cbd5ff}
+    .code{font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;font-size:12px;background:rgba(255,255,255,.03);border:1px solid var(--card-border);padding:8px;border-radius:8px}
+    input.invalid{border-color:var(--bad)!important;box-shadow:0 0 0 3px rgba(255,107,107,.18)}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <strong>Live Best Available</strong>
+      <input id="draftId" placeholder="Draft ID eg. 1252648379318534144" />
+      <label>Poll (s) <input id="pollSecs" type="number" min="1" step="1" value="2" style="width:60px"></label>
+      <button id="startBtn" class="btn primary">Start</button>
+      <button id="stopBtn" class="btn">Stop</button>
+      <span class="pill">Polling: <span id="polling">off</span></span>
+      <span class="muted">Status: <span id="status">idle</span></span>
+      <select id="posFilter"><option value="ALL">All</option><option>QB</option><option>RB</option><option>WR</option><option>TE</option><option>K</option><option>DEF</option></select>
+      <input id="search" placeholder="Search name/team" style="min-width:180px">
+      <button id="runTestsBtn" class="btn">Run tests</button>
+    </header>
+
+    <div class="grid">
+      <section class="card pad">
+        <div class="row" style="margin-bottom:8px">
+          <div>
+            <label class="muted tiny">CSV file</label>
+            <input type="file" id="rankFile" accept=".csv,text/csv" />
+          </div>
+          <div style="flex:1">
+            <label class="muted tiny">Paste CSV</label>
+            <textarea id="rankPaste" rows="3" placeholder="Paste FantasyPros CSV here"></textarea>
+            <div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap">
+              <button id="parsePasteBtn" class="btn">Parse pasted CSV</button>
+              <button id="useSampleBtn" class="btn">Use sample CSV</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="scroll">
+          <table>
+            <thead>
+              <tr>
+                <th style="width:70px">Rank</th>
+                <th>Player</th>
+                <th style="width:70px">Pos</th>
+                <th style="width:70px">Team</th>
+                <th style="width:70px" class="right">Tier</th>
+                <th style="width:90px" class="right">Drafted</th>
+              </tr>
+            </thead>
+            <tbody id="tbody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <aside class="card pad">
+        <h2>Draft / Data</h2>
+        <div class="row" style="gap:16px">
+          <div>Seen picks: <strong id="seen">0</strong></div>
+          <div>Available: <strong id="avail">0</strong></div>
+        </div>
+        <div style="margin-top:10px">
+          <div class="muted tiny">Last 20 drafted (latest on top)</div>
+          <ul id="recent" class="recent"></ul>
+        </div>
+        <div style="margin-top:10px">
+          <div class="muted tiny">Tests</div>
+          <pre id="tests" class="code" style="min-height:90px"></pre>
+        </div>
+        <div style="margin-top:10px">
+          <div class="muted tiny">Errors</div>
+          <pre id="errors" class="code" style="min-height:120px"></pre>
+        </div>
+      </aside>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  <script>
+    const els = {
+      draftId: document.getElementById('draftId'),
+      pollSecs: document.getElementById('pollSecs'),
+      posFilter: document.getElementById('posFilter'),
+      search: document.getElementById('search'),
+      startBtn: document.getElementById('startBtn'),
+      stopBtn: document.getElementById('stopBtn'),
+      runTestsBtn: document.getElementById('runTestsBtn'),
+      useSampleBtn: document.getElementById('useSampleBtn'),
+      rankFile: document.getElementById('rankFile'),
+      rankPaste: document.getElementById('rankPaste'),
+      parsePasteBtn: document.getElementById('parsePasteBtn'),
+      status: document.getElementById('status'),
+      polling: document.getElementById('polling'),
+      tbody: document.getElementById('tbody'),
+      recent: document.getElementById('recent'),
+      tests: document.getElementById('tests'),
+      errors: document.getElementById('errors'),
+      seen: document.getElementById('seen'),
+      avail: document.getElementById('avail'),
+    };
+
+    const state = {
+      rankings: [],            // normalized ranking rows
+      playersIndex: {},        // Sleeper players map
+      draftedIds: new Set(),   // player_id strings from API
+      draftedNameKeys: new Set(), // fallback: name|pos|team keys from API
+      manualDrafted: new Set(),
+      manualRecent: [],        // {name, pos, team, key, when, pick, manual:true}
+      nameMatchCache: new Map(),
+      timer: null,
+      maxPickNo: 0,
+      manualCounter: 0,
+    };
+
+    // ---------- utilities ----------
+    const setStatus = (t)=> els.status.textContent = t;
+    const setPolling = (on)=> { els.polling.textContent = on ? 'on' : 'off'; els.polling.style.background = on ? 'rgba(46,204,113,.12)' : 'rgba(255,255,255,.03)'; };
+    const logErr = (m)=> { console.error(m); els.errors.textContent = (els.errors.textContent + "\n" + m).trim(); };
+    const logTest = (m)=> { els.tests.textContent = (els.tests.textContent + "\n" + m).trim(); };
+
+    const escapeHtml = (s)=> String(s||'').replace(/[&<>"']/g, m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[m]));
+    const normName = (n)=> String(n||'').toLowerCase().replace(/[^a-z\s]/g,'').replace(/\b(jr|sr|ii|iii|iv|v)\b/g,'').replace(/\s+/g,' ').trim();
+    const firstToken = (n)=> normName(n).split(' ')[0]||'';
+    const lastToken = (n)=> { const a = normName(n).split(' '); return a[a.length-1]||''; };
+    const firstInitial = (n)=> firstToken(n).slice(0,1);
+    const posSimplify = (p)=> { const raw = String(p||'').toUpperCase(); const letters=(raw.match(/[A-Z]+/)||[''])[0]; return letters==='DST'?'DEF':letters; };
+    const initials = (name)=> { const parts=(String(name||'').trim()).split(/\s+/).filter(Boolean); if(parts.length===0) return ''; if(parts.length===1) return (parts[0][0]||'').toUpperCase(); return (parts[0][0]||'').toUpperCase() + (parts[1][0]||'').toUpperCase(); };
+    const uniqueKey = (r)=> r.player_id ? 'pid:'+String(r.player_id) : 'nm:'+normName(r.name)+'|'+(r.pos||'')+'|'+(r.team||'');
+    const nameKey = (name,pos,team)=> 'nm:'+normName(name)+'|'+(pos||'')+'|'+(team||'');
+
+    // ---------- CSV ----------
+    function parseCSV(text){
+      const out = Papa.parse(text, { header:true, skipEmptyLines:true });
+      if(out.errors && out.errors.length){ logErr('CSV parser: '+ out.errors.slice(0,3).map(e=>e.message).join(' | ')); }
+      const rows = (out.data||[]).map((row,i)=>{
+        const o={}; Object.keys(row).forEach(k=>{ o[k.toLowerCase()] = (row[k]??'').toString().trim(); });
+        const rank = Number(o.rk || o.rank || (i+1));
+        const name = o['player name'] || o.name || o.full_name || '';
+        const pos = posSimplify(o.pos || o.position || '');
+        const team = (o.team || o['team'] || '').toUpperCase();
+        const tier = (o.tiers || o.tier || '').toString().trim();
+        return { player_id: o.player_id || o.id || '', rank, name, pos, team, tier };
+      }).filter(r=> r.name);
+      return rows;
+    }
+
+    // ---------- Sleeper players index ----------
+    async function loadPlayersIndex(){
+      try{
+        setStatus('loading players…');
+        const res = await fetch('https://api.sleeper.app/v1/players/nfl');
+        if(!res.ok) throw new Error('players fetch failed '+res.status);
+        state.playersIndex = await res.json();
+        setStatus('players loaded');
+      }catch(e){ logErr(e.message); setStatus('players not loaded'); }
+    }
+
+    // ---------- fuzzy attach ----------
+    function fuzzyFindPlayerId(r){
+      const cacheKey = normName(r.name)+'|'+(r.pos||'')+'|'+(r.team||'');
+      if(state.nameMatchCache.has(cacheKey)) return state.nameMatchCache.get(cacheKey);
+      const pos = r.pos || '';
+      const rFirst = firstToken(r.name), rLast = lastToken(r.name), rInit = firstInitial(r.name);
+      if(!rLast){ state.nameMatchCache.set(cacheKey, null); return null; }
+      let best = { pid:null, score:0 };
+      for(const pid in state.playersIndex){
+        const p = state.playersIndex[pid]; if(!p || !p.full_name) continue;
+        if(pos && p.position !== pos) continue; // hard gate position
+        const pFirst = firstToken(p.full_name), pLast = lastToken(p.full_name), pInit = firstInitial(p.full_name);
+        if(pLast !== rLast) continue; // require last-name match
+        let score = 0;
+        if(pFirst === rFirst) score += 0.7; else if(pInit && pInit === rInit) score += 0.5; else { const rF=rFirst.replace(/[^a-z]/g,''), pF=pFirst.replace(/[^a-z]/g,''); if(rF && pF && (rF.startsWith(pF) || pF.startsWith(rF))) score += 0.4; }
+        const syn = { 'j':['josh','joshua','dj'], 'd':['dj'], 'k':['kenneth','kaleb'] };
+        if(syn[rFirst] && syn[rFirst].includes(pFirst)) score += 0.6;
+        if(r.team && p.team && r.team === p.team) score += 0.3;
+        const a = normName(p.full_name), b = normName(r.name); if(a===b) score += 1.0;
+        const maxLen=Math.max(a.length,b.length)||1; let dist=0; for(let i=0;i<Math.min(a.length,b.length);i++){ if(a[i]!==b[i]) dist++; } const sim=1-(dist/maxLen); score += Math.max(0, Math.min(0.2, sim-0.7));
+        if(score > best.score) best = { pid, score };
+      }
+      const result = best.score >= 0.5 ? best.pid : null; state.nameMatchCache.set(cacheKey, result); return result;
+    }
+
+    function hydrateFromPlayers(r){
+      if(r.player_id && state.playersIndex[r.player_id]){
+        const p = state.playersIndex[r.player_id];
+        return { ...r, name: r.name || p.full_name || ((p.first_name||'')+' '+(p.last_name||'')), pos: r.pos || p.position || '', team: r.team || p.team || '' };
+      }
+      if(!r.player_id && r.pos==='DEF' && r.team){ // map team DEF
+        for(const pid in state.playersIndex){ const p = state.playersIndex[pid]; if(p && p.position==='DEF' && p.team===r.team){ r.player_id=pid; break; } }
+      }
+      if(!r.player_id && r.name){ // exact normalized match
+        const key = normName(r.name);
+        for(const pid in state.playersIndex){ const p = state.playersIndex[pid]; const candidate = normName(p.full_name || ((p.first_name||'')+' '+(p.last_name||''))); if(candidate === key){ r.player_id=pid; r.pos=r.pos||p.position; r.team=r.team||p.team; break; } }
+      }
+      if(!r.player_id && r.name){ const found=fuzzyFindPlayerId(r); if(found){ const p=state.playersIndex[found]; r.player_id=found; r.pos=r.pos||p.position; r.team=r.team||p.team; } }
+      return r;
+    }
+
+    // ---------- compute & render ----------
+    function computeAvailable(){
+      const pos = els.posFilter.value;
+      const q = els.search.value.trim().toLowerCase();
+      let list = state.rankings.map(hydrateFromPlayers)
+        .filter(r => !state.draftedIds.has(String(r.player_id)))
+        .filter(r => !state.draftedNameKeys.has(nameKey(r.name,r.pos,r.team)))
+        .filter(r => !state.manualDrafted.has(uniqueKey(r)));
+      if(pos && pos!=='ALL') list = list.filter(r=> (r.pos||'').toUpperCase()===pos);
+      if(q) list = list.filter(r=> (r.name||'').toLowerCase().includes(q) || (r.team||'').toLowerCase().includes(q));
+      list.sort((a,b)=> (a.rank||99999) - (b.rank||99999) || String(a.tier).localeCompare(String(b.tier)));
+      els.avail.textContent = list.length;
+      renderTable(list.slice(0,200));
+    }
+
+    function tierColor(t){ const x=String(t||'').trim(); return x==='1'? '#6ea8fe': x==='2'? '#2ecc71': x==='3'? '#f1c40f': x==='4'? '#e67e22': x==='5'? '#e74c3c': '#95a5a6'; }
+
+    function renderTable(rows){
+      const frag = document.createDocumentFragment();
+      let lastTier = null;
+      for(const r of rows){
+        if(r.tier && r.tier !== lastTier){ const trb=document.createElement('tr'); trb.className='tierRow'; const td=document.createElement('td'); td.colSpan=6; td.textContent='— Tier '+r.tier+' —'; trb.appendChild(td); frag.appendChild(trb); lastTier=r.tier; }
+        const tr = document.createElement('tr');
+        const key = uniqueKey(r);
+        const avatar = escapeHtml(initials(r.name||''));
+        const checked = state.manualDrafted.has(key) ? 'checked' : '';
+        tr.innerHTML = `
+          <td>${r.rank ?? ''}</td>
+          <td><span class="avatar">${avatar}</span> ${escapeHtml(r.name||'')}</td>
+          <td>${escapeHtml(r.pos||'')}</td>
+          <td>${escapeHtml(r.team||'')}</td>
+          <td class="right" style="color:${tierColor(r.tier)}">${r.tier ?? ''}</td>
+          <td class="right"><label class="toggle"><input type="checkbox" data-key="${escapeHtml(key)}" ${checked}/><span class="slider" title="Mark drafted"></span></label></td>`;
+        frag.appendChild(tr);
+      }
+      els.tbody.replaceChildren(frag);
+      // wire
+      els.tbody.querySelectorAll('input[type="checkbox"]').forEach(chk=>{
+        chk.addEventListener('change', (e)=>{
+          const key = e.target.getAttribute('data-key');
+          const row = rows.find(r=> uniqueKey(r)===key);
+          if(!row) return;
+          if(e.target.checked){
+            state.manualDrafted.add(key);
+            state.manualCounter++;
+            const when = (state.maxPickNo||0) + (state.manualCounter/1000);
+            state.manualRecent.push({ name: row.name, team: row.team, pos: row.pos, key, when, pick:null, manual:true });
+          }else{
+            state.manualDrafted.delete(key);
+            state.manualRecent = state.manualRecent.filter(x=> x.key !== key);
+          }
+          computeAvailable();
+          renderRecent();
+        });
+      });
+    }
+
+    // ---------- recent picks ----------
+    let lastApiRecent = [];
+    function updateFromPicks(picks){
+      const sorted = [...picks].sort((a,b)=> (a.pick_no||0) - (b.pick_no||0));
+      state.maxPickNo = Math.max(state.maxPickNo||0, ...sorted.map(p=> p.pick_no||0));
+      state.draftedIds = new Set(sorted.filter(p=>p.player_id).map(p=> String(p.player_id)));
+      // also populate drafted name keys for cross reference
+      state.draftedNameKeys = new Set(sorted.map(p=>{
+        const pid = String(p.player_id||'');
+        const pl = state.playersIndex[pid] || {};
+        const name = pl.full_name || ((pl.first_name||'')+' '+(pl.last_name||'')).trim() || (p.metadata?.first_name? (p.metadata.first_name+' '+(p.metadata.last_name||'')) : '');
+        const pos = pl.position || p.metadata?.position || '';
+        const team = pl.team || p.metadata?.team || '';
+        return nameKey(name,pos,team);
+      }));
+      const last20 = sorted.slice(-20).map(p=>{
+        const pid = String(p.player_id||'');
+        const pl = state.playersIndex[pid] || {};
+        const nm = pl.full_name || ((pl.first_name||'')+' '+(pl.last_name||'')).trim() || (p.metadata?.first_name? (p.metadata.first_name+' '+(p.metadata.last_name||'')) : '');
+        return { name: nm || '—', team: pl.team || p.metadata?.team || '', pos: pl.position || p.metadata?.position || '', pick: (p.pick_no||0), when: (p.pick_no||0), manual:false };
+      });
+      lastApiRecent = last20;
+      renderRecent();
+      els.seen.textContent = picks.length;
+      computeAvailable();
+    }
+
+    function renderRecent(){
+      const combined = [...lastApiRecent, ...state.manualRecent];
+      combined.sort((a,b)=> (b.when||0) - (a.when||0));
+      const top = combined.slice(0,20);
+      const frag = document.createDocumentFragment();
+      top.forEach(it=>{
+        const li = document.createElement('li');
+        const left = document.createElement('span'); left.textContent = (it.pick?('#'+it.pick+' '):'') + (it.name||'—');
+        const right = document.createElement('span'); right.textContent = `${it.pos||''} · ${it.team||''}`;
+        if(it.manual && it.key){ const undo = document.createElement('button'); undo.className='undoBtn'; undo.textContent='Undo'; undo.onclick=()=>{ state.manualDrafted.delete(it.key); state.manualRecent = state.manualRecent.filter(x=> x.key!==it.key); computeAvailable(); renderRecent(); }; right.appendChild(undo); }
+        li.appendChild(left); li.appendChild(right); frag.appendChild(li);
+      });
+      els.recent.replaceChildren(frag);
+    }
+
+    // ---------- start / stop ----------
+    function preflight(){
+      els.draftId.classList.remove('invalid');
+      if(!state.rankings || state.rankings.length===0){ setStatus('no rankings — open CSV'); els.rankFile?.click?.(); return {ok:false, reason:'no-rankings'}; }
+      const id = els.draftId.value.trim();
+      if(!id){ setStatus('enter Draft ID to go live'); els.draftId.classList.add('invalid'); return {ok:false, reason:'no-draft-id'}; }
+      return {ok:true, id};
+    }
+
+    async function start(){
+      const pf = preflight(); if(!pf.ok) return;
+      stop(); // clear any previous timer
+      setPolling(true); setStatus('starting…');
+      const run = async ()=>{
+        try{
+          const res = await fetch(`https://api.sleeper.app/v1/draft/${pf.id}/picks`);
+          if(!res.ok) throw new Error('draft picks fetch failed '+res.status);
+          const picks = await res.json();
+          updateFromPicks(picks);
+          setStatus('live');
+        }catch(e){ logErr(e.message); setStatus('error'); }
+      };
+      await run();
+      const ms = Math.max(1000, Number(els.pollSecs.value||2)*1000);
+      state.timer = setInterval(run, ms);
+    }
+
+    function stop(){ if(state.timer){ clearInterval(state.timer); state.timer=null; } setPolling(false); if(els.status.textContent!=='idle') setStatus('paused'); }
+
+    function clearAll(){ stop(); state.rankings=[]; state.draftedIds=new Set(); state.draftedNameKeys=new Set(); state.manualDrafted=new Set(); state.manualRecent=[]; els.tbody.replaceChildren(); els.recent.replaceChildren(); els.avail.textContent='0'; els.seen.textContent='0'; els.errors.textContent=''; els.tests.textContent=''; setStatus('idle'); }
+
+    // ---------- load rankings ----------
+    async function loadRankingsFromFile(file){ try{ const text = await file.text(); state.rankings = parseCSV(text); computeAvailable(); if(els.draftId.value.trim()) start(); else setStatus('rankings loaded — enter Draft ID'); } catch(e){ logErr(e.message); } }
+    function loadRankingsFromPaste(){ const text = els.rankPaste.value.trim(); if(!text){ logErr('paste empty'); return; } state.rankings = parseCSV(text); computeAvailable(); if(els.draftId.value.trim()) start(); else setStatus('rankings loaded — enter Draft ID'); }
+
+    // ---------- tests ----------
+    function runTests(){
+      els.tests.textContent=''; logTest('Running tests…');
+      // 1. CSV mapping
+      const csv1 = `RK,TIERS,PLAYER NAME,TEAM,POS\n1,1,Justin Jefferson,MIN,WR1`; const t1 = parseCSV(csv1)[0];
+      if(t1 && t1.rank===1 && t1.name==='Justin Jefferson' && t1.team==='MIN' && t1.pos==='WR' && t1.tier==='1') logTest('✓ CSV mapping (FantasyPros)'); else logTest('✗ CSV mapping FAILED: '+JSON.stringify(t1));
+      // 2. Fuzzy mapping
+      const prior = state.playersIndex; state.playersIndex = {
+        'p2': { full_name:'Josh Allen', position:'QB', team:'BUF' },
+        'p4': { full_name:'DJ Moore', position:'WR', team:'CHI' },
+        'p5': { full_name:'Kenneth Walker III', position:'RB', team:'SEA' },
+        'p6': { full_name:'Kaleb Johnson', position:'RB', team:'CHI' },
+      };
+      let h = hydrateFromPlayers({ player_id:'', name:'J. Allen', pos:'QB', team:'BUF' }); if(h.player_id==='p2') logTest('✓ Fuzzy J. Allen → Josh Allen'); else logTest('✗ Fuzzy FAILED '+JSON.stringify(h));
+      h = hydrateFromPlayers({ player_id:'', name:'D. Moore', pos:'WR', team:'CHI' }); if(h.player_id==='p4') logTest('✓ Fuzzy D. Moore → DJ Moore'); else logTest('✗ Fuzzy FAILED '+JSON.stringify(h));
+      h = hydrateFromPlayers({ player_id:'', name:'K. Walker', pos:'RB', team:'SEA' }); if(h.player_id==='p5') logTest('✓ Fuzzy K. Walker → Kenneth Walker III'); else logTest('✗ Fuzzy FAILED '+JSON.stringify(h));
+      h = hydrateFromPlayers({ player_id:'', name:'K. Johnson', pos:'RB', team:'CHI' }); if(h.player_id==='p6') logTest('✓ Fuzzy K. Johnson → Kaleb Johnson'); else logTest('✗ Fuzzy FAILED '+JSON.stringify(h));
+      state.playersIndex = prior; logTest('Tests complete.');
+    }
+
+    // ---------- wire UI ----------
+    els.startBtn.onclick = start;
+    els.stopBtn.onclick = stop;
+    els.runTestsBtn.onclick = runTests;
+    els.useSampleBtn.onclick = ()=>{ els.rankPaste.value = SAMPLE_CSV; loadRankingsFromPaste(); };
+    els.parsePasteBtn.onclick = loadRankingsFromPaste;
+    els.rankFile.addEventListener('change', e=>{ const f=e.target.files?.[0]; if(f) loadRankingsFromFile(f); });
+    els.posFilter.onchange = computeAvailable; els.search.oninput = computeAvailable;
+    els.draftId.addEventListener('input', ()=>{ els.draftId.classList.remove('invalid'); if(state.rankings.length>0 && !state.timer && els.draftId.value.trim()) start(); });
+
+    const SAMPLE_CSV = `RK,TIERS,PLAYER NAME,TEAM,POS\n1,1,Justin Jefferson,MIN,WR1\n2,1,Bijan Robinson,ATL,RB1\n3,1,CeeDee Lamb,DAL,WR2\n12,2,Josh Allen,BUF,QB\n25,2,DJ Moore,CHI,WR\n29,2,Kenneth Walker III,SEA,RB\n60,4,Kaleb Johnson,CHI,RB\n120,6,49ers D/ST,SF,DST`;
+
+    // ---------- init ----------
+    (async ()=>{ await loadPlayersIndex(); runTests(); })();
+  </script>
+</body>
+</html>
