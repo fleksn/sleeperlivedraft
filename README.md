@@ -33,8 +33,6 @@ A simple browser-based app that connects to your live [Sleeper](https://sleeper.
 - Polls Sleeper’s public API every 2 seconds for live updates.
 - Manual drafted picks are timestamped so they slot into the drafted list in the correct order.
 
-Feel free to improve!
-
 ---
 
 ## ⚖️ Disclaimer
