@@ -34,3 +34,17 @@ A simple browser-based app that connects to your live [Sleeper](https://sleeper.
 - Manual drafted picks are timestamped so they slot into the drafted list in the correct order.
 
 Feel free to improve!
+
+---
+
+## ⚖️ Disclaimer
+
+This project is an **independent, open-source tool** created for personal fantasy football draft assistance.  
+It is **not affiliated with, endorsed, or certified by Sleeper, FantasyPros, or the NFL**.  
+
+- All player data and rankings must be provided by the user (e.g., FantasyPros CSV export).  
+- This tool only consumes publicly available Sleeper draft data via their API.  
+- Trademarks, names, and logos of Sleeper, FantasyPros, NFL teams, and players belong to their respective owners.  
+
+Use at your own risk. The maintainers are not responsible for any issues, account restrictions, or damages arising from use of this tool.
+
